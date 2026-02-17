@@ -24,13 +24,19 @@ button{border:none;border-radius:10px;padding:10px 12px;font-size:14px}
 .favbtn{background:#f39c12;color:#fff}
 .refresh{background:#27ae60;color:#fff}
 .add{background:#e3f2fd}
-.trainer{background:#8e44ad;color:#fff}
+.check{background:#8e44ad;color:#fff}
 
-.search{margin-top:10px;width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-size:16px}
+.search{
+margin-top:10px;width:100%;padding:12px;border-radius:12px;
+border:1px solid #ccc;font-size:16px
+}
 
 main{padding:14px}
 
-.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;position:relative}
+.card{
+background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
+position:relative
+}
 
 .word{font-weight:700;font-size:18px}
 .pron{color:#666;margin-top:2px;word-break:break-word}
@@ -39,13 +45,20 @@ main{padding:14px}
 .icons{margin-top:6px}
 .icons span{font-size:20px;margin-right:8px}
 
-.star{position:absolute;right:12px;top:12px;font-size:22px;cursor:pointer}
+.star{
+position:absolute;right:12px;top:12px;font-size:22px;cursor:pointer
+}
 
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);
-display:none;align-items:center;justify-content:center;padding:14px;z-index:99}
+.modal{
+position:fixed;inset:0;background:rgba(0,0,0,.35);
+display:none;align-items:center;justify-content:center;
+padding:14px;z-index:99
+}
 
-.modal-content{background:#fff;border-radius:16px;padding:14px;width:100%;
-max-width:420px;max-height:90vh;overflow:auto}
+.modal-content{
+background:#fff;border-radius:16px;padding:14px;width:100%;
+max-width:420px;max-height:90vh;overflow:auto
+}
 
 .modal-content input,
 .modal-content textarea{
@@ -54,29 +67,23 @@ border-radius:10px;border:1px solid #ccc;font-size:16px;
 white-space:pre-wrap;word-break:break-word;
 }
 
-.ipa{font-family:Arial,Helvetica,sans-serif}
-
 .modal-actions{display:flex;gap:10px;margin-top:6px}
 .modal-actions button{flex:1}
 
+.audio{background:#2ecc71;color:#fff}
 .save{background:#1e88e5;color:#fff}
 .delete{background:#e53935;color:#fff}
 .cancel{background:#bbb}
-.audio{background:#2ecc71;color:#fff}
-.test{background:#9b59b6;color:#fff}
 
-.result{text-align:center;font-size:20px;margin-top:8px;font-weight:700}
+.result{text-align:center;font-size:18px;margin-top:6px;font-weight:700}
 .correct{color:#27ae60}
 .wrong{color:#e74c3c}
 
-/* Trainer */
-.trainerBox{
-background:#fff;border-radius:16px;padding:20px;text-align:center;
+.score{margin-top:4px;color:#555}
+
+.closeX{
+position:absolute;right:14px;top:10px;font-size:22px;cursor:pointer
 }
-.trainerWord{font-size:26px;font-weight:700}
-.trainerIPA{color:#666;margin-top:4px}
-.trainerBtns{margin-top:16px;display:flex;gap:10px}
-.trainerBtns button{flex:1;font-size:16px}
 </style>
 </head>
 
@@ -84,7 +91,7 @@ background:#fff;border-radius:16px;padding:20px;text-align:center;
 
 <header>
 <h1>📘 My Vocab Ultra</h1>
-<div class="count" id="count">Total vocabulary: 0 words</div>
+<div class="count" id="count">Total vocabulary: 0</div>
 
 <div class="controls">
 <button class="import" onclick="importCSV()">📥</button>
@@ -92,8 +99,7 @@ background:#fff;border-radius:16px;padding:20px;text-align:center;
 <button class="deleteall" onclick="deleteAll()">🧨</button>
 <button class="favbtn" onclick="toggleFavView()">⭐</button>
 <button class="refresh" onclick="resetView()">🔄</button>
-<button class="trainer" onclick="startTrainer()">🎲</button>
-<button class="add" onclick="openModal()">＋</button>
+<button class="check" onclick="openChecker()">🎤 Check</button>
 </div>
 
 <input class="search" id="search" placeholder="Search..." oninput="render()">
@@ -101,19 +107,25 @@ background:#fff;border-radius:16px;padding:20px;text-align:center;
 
 <main id="list"></main>
 
-<!-- TRAINER -->
-<div class="modal" id="trainerModal">
-<div class="modal-content trainerBox">
+<!-- CHECKER -->
+<div class="modal" id="checkerModal">
+<div class="modal-content">
 
-<div class="trainerWord" id="trainerWord"></div>
-<div class="trainerIPA" id="trainerIPA"></div>
+<div class="closeX" onclick="closeChecker()">✖</div>
 
-<div class="trainerBtns">
-<button class="audio" onclick="trainerSpeak()">🔊 Hear</button>
-<button class="test" onclick="trainerListen()">🎤 Speak</button>
+<input id="checkInput" placeholder="Type any word..."
+onkeydown="if(event.key==='Enter')loadCheckWord()">
+
+<div id="checkWord" class="word"></div>
+<div id="checkIPA" class="pron"></div>
+
+<div class="modal-actions">
+<button class="audio" onclick="hearWord()">🔊 Hear</button>
+<button class="audio" onclick="testWord()">🎤 Test</button>
 </div>
 
-<div id="trainerResult" class="result"></div>
+<div id="checkResult" class="result"></div>
+<div id="checkScore" class="score"></div>
 
 </div>
 </div>
@@ -121,7 +133,9 @@ background:#fff;border-radius:16px;padding:20px;text-align:center;
 <script>
 let data=JSON.parse(localStorage.getItem("vocab")||"[]")
 let favOnly=false
-let trainerIndex=null
+let currentCheckWord=""
+let totalAttempts=0
+let correctAttempts=0
 
 function render(){
 const list=document.getElementById("list")
@@ -152,8 +166,6 @@ d.innerHTML=`
 `
 list.appendChild(d)
 })
-
-localStorage.setItem("vocab",JSON.stringify(data))
 }
 
 function toggleFav(i){data[i].fav=!data[i].fav;render()}
@@ -167,28 +179,49 @@ function deleteAll(){
 if(confirm("Delete all?")){data=[];render()}
 }
 
-/* TRAINER */
-function startTrainer(){
-if(data.length==0){alert("No vocab");return}
-trainerModal.style.display="flex"
-nextTrainerWord()
+/* CHECKER */
+function openChecker(){
+checkerModal.style.display="flex"
+checkInput.focus()
 }
 
-function nextTrainerWord(){
-trainerIndex=Math.floor(Math.random()*data.length)
-const v=data[trainerIndex]
-trainerWord.innerText=v.word
-trainerIPA.innerText=v.pron||""
-trainerResult.innerText=""
+function closeChecker(){
+checkerModal.style.display="none"
+checkInput.value=""
+checkWord.innerText=""
+checkIPA.innerText=""
+checkResult.innerText=""
+checkScore.innerText=""
 }
 
-function trainerSpeak(){
-const v=data[trainerIndex]
-speak(v.word)
+async function loadCheckWord(){
+currentCheckWord=checkInput.value.trim().toLowerCase()
+if(!currentCheckWord)return
+checkWord.innerText=currentCheckWord
+checkResult.innerText=""
+checkScore.innerText=""
+fetchIPA(currentCheckWord)
 }
 
-function trainerListen(){
-const target=data[trainerIndex].word.toLowerCase()
+async function fetchIPA(word){
+try{
+let res=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+let data=await res.json()
+let ipa=data[0]?.phonetics?.find(p=>p.text)?.text || ""
+checkIPA.innerText=ipa
+}catch{
+checkIPA.innerText=""
+}
+}
+
+function hearWord(){
+if(!currentCheckWord)return
+speak(currentCheckWord)
+}
+
+function testWord(){
+if(!currentCheckWord)return
+
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition
 if(!SpeechRecognition){alert("Speech not supported");return}
 
@@ -198,18 +231,27 @@ rec.start()
 
 rec.onresult=e=>{
 const spoken=e.results[0][0].transcript.toLowerCase()
-if(spoken.includes(target)){
-trainerResult.innerText="✔ Correct"
-trainerResult.className="result correct"
+totalAttempts++
+
+if(spoken.includes(currentCheckWord)){
+correctAttempts++
+checkResult.innerHTML="✔ Correct"
+checkResult.className="result correct"
 playCling()
-setTimeout(nextTrainerWord,1200)
 }else{
-trainerResult.innerText="✖ Try again"
-trainerResult.className="result wrong"
+checkResult.innerHTML="✖ Try again"
+checkResult.className="result wrong"
 playBeep()
-trainerSpeak()
+hearWord()
+}
+
+updateScore()
 }
 }
+
+function updateScore(){
+let score=Math.round((correctAttempts/totalAttempts)*100)
+checkScore.innerText=`Score: ${score}% (${correctAttempts}/${totalAttempts})`
 }
 
 function playCling(){
