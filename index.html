@@ -9,22 +9,19 @@
 *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 body{margin:0;background:#f3f5f9}
 
-header{position:sticky;top:0;background:#fff;padding:14px;
-box-shadow:0 2px 6px rgba(0,0,0,.08);z-index:10}
+header{
+position:sticky;top:0;background:#fff;padding:14px;
+box-shadow:0 2px 6px rgba(0,0,0,.08);z-index:10
+}
 
 h1{margin:0;font-size:22px}
 .count{font-size:13px;color:#666;margin-top:2px}
 
 .controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-button{border:none;border-radius:10px;padding:10px 12px;font-size:14px}
-
-.import{background:#1e88e5;color:#fff}
-.export{background:#6a5acd;color:#fff}
-.deleteall{background:#e53935;color:#fff}
-.favbtn{background:#f39c12;color:#fff}
-.refresh{background:#27ae60;color:#fff}
-.add{background:#e3f2fd}
-.check{background:#8e44ad;color:#fff}
+button{
+border:none;border-radius:10px;padding:10px 12px;
+font-size:14px;background:#e0e0e0;cursor:pointer
+}
 
 .search{
 margin-top:10px;width:100%;padding:12px;border-radius:12px;
@@ -39,50 +36,38 @@ position:relative
 }
 
 .word{font-weight:700;font-size:18px}
-.pron{color:#666;margin-top:2px;word-break:break-word}
-.meaning{margin-top:2px;word-break:break-word}
+.pron{color:#666;margin-top:2px}
+.meaning{margin-top:2px}
 
-.icons{margin-top:6px}
-.icons span{font-size:20px;margin-right:8px}
+.icons span{font-size:20px;margin-right:8px;cursor:pointer}
 
 .star{
 position:absolute;right:12px;top:12px;font-size:22px;cursor:pointer
 }
 
+/* CHECKER */
 .modal{
 position:fixed;inset:0;background:rgba(0,0,0,.35);
 display:none;align-items:center;justify-content:center;
 padding:14px;z-index:99
 }
 
-.modal-content{
-background:#fff;border-radius:16px;padding:14px;width:100%;
-max-width:420px;max-height:90vh;overflow:auto
+.modal-box{
+background:#fff;border-radius:16px;padding:18px;width:100%;
+max-width:380px;text-align:center;position:relative
 }
 
-.modal-content input,
-.modal-content textarea{
-width:100%;margin-bottom:10px;padding:12px 14px;
-border-radius:10px;border:1px solid #ccc;font-size:16px;
-white-space:pre-wrap;word-break:break-word;
-}
+.wordBig{font-size:26px;font-weight:700}
+.ipa{color:#666;margin-top:4px}
 
-.modal-actions{display:flex;gap:10px;margin-top:6px}
-.modal-actions button{flex:1}
-
-.audio{background:#2ecc71;color:#fff}
-.save{background:#1e88e5;color:#fff}
-.delete{background:#e53935;color:#fff}
-.cancel{background:#bbb}
-
-.result{text-align:center;font-size:18px;margin-top:6px;font-weight:700}
+.result{margin-top:10px;font-size:18px;font-weight:700}
 .correct{color:#27ae60}
 .wrong{color:#e74c3c}
 
-.score{margin-top:4px;color:#555}
+.score{margin-top:6px;color:#555}
 
 .closeX{
-position:absolute;right:14px;top:10px;font-size:22px;cursor:pointer
+position:absolute;right:12px;top:10px;font-size:22px;cursor:pointer
 }
 </style>
 </head>
@@ -94,12 +79,12 @@ position:absolute;right:14px;top:10px;font-size:22px;cursor:pointer
 <div class="count" id="count">Total vocabulary: 0</div>
 
 <div class="controls">
-<button class="import" onclick="importCSV()">📥</button>
-<button class="export" onclick="exportCSV()">📤</button>
-<button class="deleteall" onclick="deleteAll()">🧨</button>
-<button class="favbtn" onclick="toggleFavView()">⭐</button>
-<button class="refresh" onclick="resetView()">🔄</button>
-<button class="check" onclick="openChecker()">🎤 Check</button>
+<button onclick="importCSV()">Import</button>
+<button onclick="exportCSV()">Export</button>
+<button onclick="deleteAll()">Delete All</button>
+<button onclick="toggleFavView()">Favorites</button>
+<button onclick="resetView()">Refresh</button>
+<button onclick="openChecker()">Pronunciation</button>
 </div>
 
 <input class="search" id="search" placeholder="Search..." oninput="render()">
@@ -109,19 +94,20 @@ position:absolute;right:14px;top:10px;font-size:22px;cursor:pointer
 
 <!-- CHECKER -->
 <div class="modal" id="checkerModal">
-<div class="modal-content">
+<div class="modal-box">
 
 <div class="closeX" onclick="closeChecker()">✖</div>
 
 <input id="checkInput" placeholder="Type any word..."
+style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc"
 onkeydown="if(event.key==='Enter')loadCheckWord()">
 
-<div id="checkWord" class="word"></div>
-<div id="checkIPA" class="pron"></div>
+<div id="checkWord" class="wordBig"></div>
+<div id="checkIPA" class="ipa"></div>
 
-<div class="modal-actions">
-<button class="audio" onclick="hearWord()">🔊 Hear</button>
-<button class="audio" onclick="testWord()">🎤 Test</button>
+<div style="margin-top:12px;display:flex;gap:10px">
+<button style="flex:1" onclick="hearWord()">Hear</button>
+<button style="flex:1" onclick="testWord()">Test</button>
 </div>
 
 <div id="checkResult" class="result"></div>
@@ -131,11 +117,9 @@ onkeydown="if(event.key==='Enter')loadCheckWord()">
 </div>
 
 <script>
+/* VOCAB DATA */
 let data=JSON.parse(localStorage.getItem("vocab")||"[]")
 let favOnly=false
-let currentCheckWord=""
-let totalAttempts=0
-let correctAttempts=0
 
 function render(){
 const list=document.getElementById("list")
@@ -143,15 +127,14 @@ const q=document.getElementById("search").value.toLowerCase()
 list.innerHTML=""
 
 let arr=data.filter(v=>{
-if(favOnly && !v.fav) return false
+if(favOnly && !v.fav)return false
 return v.word.toLowerCase().includes(q) ||
 (v.meaning||"").toLowerCase().includes(q)
 })
 
 document.getElementById("count").innerText=`Total vocabulary: ${data.length}`
 
-arr.forEach(v=>{
-const i=data.indexOf(v)
+arr.forEach((v,i)=>{
 const d=document.createElement("div")
 d.className="card"
 d.innerHTML=`
@@ -166,106 +149,36 @@ d.innerHTML=`
 `
 list.appendChild(d)
 })
+localStorage.setItem("vocab",JSON.stringify(data))
 }
 
 function toggleFav(i){data[i].fav=!data[i].fav;render()}
 function toggleFavView(){favOnly=!favOnly;render()}
 function resetView(){favOnly=false;search.value="";render()}
 
-function speak(t){speechSynthesis.speak(new SpeechSynthesisUtterance(t))}
-function speakSlow(t){let u=new SpeechSynthesisUtterance(t);u.rate=0.6;speechSynthesis.speak(u)}
+function speak(t){
+speechSynthesis.cancel()
+speechSynthesis.speak(new SpeechSynthesisUtterance(t))
+}
+function speakSlow(t){
+speechSynthesis.cancel()
+let u=new SpeechSynthesisUtterance(t)
+u.rate=0.6
+speechSynthesis.speak(u)
+}
 
 function deleteAll(){
-if(confirm("Delete all?")){data=[];render()}
+if(confirm("Delete all vocabulary?")){
+data=[]
+render()
 }
-
-/* CHECKER */
-function openChecker(){
-checkerModal.style.display="flex"
-checkInput.focus()
-}
-
-function closeChecker(){
-checkerModal.style.display="none"
-checkInput.value=""
-checkWord.innerText=""
-checkIPA.innerText=""
-checkResult.innerText=""
-checkScore.innerText=""
-}
-
-async function loadCheckWord(){
-currentCheckWord=checkInput.value.trim().toLowerCase()
-if(!currentCheckWord)return
-checkWord.innerText=currentCheckWord
-checkResult.innerText=""
-checkScore.innerText=""
-fetchIPA(currentCheckWord)
-}
-
-async function fetchIPA(word){
-try{
-let res=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
-let data=await res.json()
-let ipa=data[0]?.phonetics?.find(p=>p.text)?.text || ""
-checkIPA.innerText=ipa
-}catch{
-checkIPA.innerText=""
-}
-}
-
-function hearWord(){
-if(!currentCheckWord)return
-speak(currentCheckWord)
-}
-
-function testWord(){
-if(!currentCheckWord)return
-
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition
-if(!SpeechRecognition){alert("Speech not supported");return}
-
-const rec=new SpeechRecognition()
-rec.lang="en-US"
-rec.start()
-
-rec.onresult=e=>{
-const spoken=e.results[0][0].transcript.toLowerCase()
-totalAttempts++
-
-if(spoken.includes(currentCheckWord)){
-correctAttempts++
-checkResult.innerHTML="✔ Correct"
-checkResult.className="result correct"
-playCling()
-}else{
-checkResult.innerHTML="✖ Try again"
-checkResult.className="result wrong"
-playBeep()
-hearWord()
-}
-
-updateScore()
-}
-}
-
-function updateScore(){
-let score=Math.round((correctAttempts/totalAttempts)*100)
-checkScore.innerText=`Score: ${score}% (${correctAttempts}/${totalAttempts})`
-}
-
-function playCling(){
-new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play()
-}
-function playBeep(){
-new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }
 
 /* CSV */
 function exportCSV(){
 let csv="word,pronunciation,meaning,fav\n"
 data.forEach(v=>{
-csv+=`"${v.word}","${v.pron}","${v.meaning}","${v.fav?1:0}"\n`
+csv+=`"${v.word}","${v.pron||""}","${v.meaning||""}","${v.fav?1:0}"\n`
 })
 const a=document.createElement("a")
 a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}))
@@ -298,6 +211,90 @@ alert("Import success")
 r.readAsText(e.target.files[0])
 }
 i.click()
+}
+
+/* PRONUNCIATION CHECKER */
+let currentCheckWord=""
+let attempts=0
+let correct=0
+
+function openChecker(){
+checkerModal.style.display="flex"
+checkInput.focus()
+}
+
+function closeChecker(){
+checkerModal.style.display="none"
+checkInput.value=""
+checkWord.innerText=""
+checkIPA.innerText=""
+checkResult.innerText=""
+checkScore.innerText=""
+}
+
+async function loadCheckWord(){
+currentCheckWord=checkInput.value.trim().toLowerCase()
+if(!currentCheckWord)return
+checkWord.innerText=currentCheckWord
+checkResult.innerText=""
+fetchIPA(currentCheckWord)
+}
+
+async function fetchIPA(w){
+try{
+let r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${w}`)
+let j=await r.json()
+let ipa=j[0]?.phonetics?.find(p=>p.text)?.text||""
+checkIPA.innerText=ipa
+}catch{checkIPA.innerText=""}
+}
+
+function hearWord(){
+if(!currentCheckWord)return
+speak(currentCheckWord)
+}
+
+function testWord(){
+if(!currentCheckWord)return
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition
+if(!SR){alert("Speech not supported");return}
+
+let rec=new SR()
+rec.lang="en-US"
+
+rec.onresult=e=>{
+let spoken=e.results[0][0].transcript.toLowerCase()
+attempts++
+
+if(spoken.includes(currentCheckWord)){
+correct++
+checkResult.innerHTML="✔ Correct"
+checkResult.className="result correct"
+playCling()
+}else{
+checkResult.innerHTML="✖ Wrong — Try again"
+checkResult.className="result wrong"
+playBeep()
+hearWord()
+}
+
+updateScore()
+}
+
+rec.start()
+}
+
+function updateScore(){
+let pct=Math.round((correct/attempts)*100)
+checkScore.innerText=`Score: ${pct}% (${correct}/${attempts})`
+}
+
+function playCling(){
+new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play()
+}
+function playBeep(){
+new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play()
 }
 
 render()
